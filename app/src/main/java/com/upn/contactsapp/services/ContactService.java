@@ -19,5 +19,7 @@ public interface ContactService {
     Call< Contact > find(@Path("id") int id);
 
     @POST("/contacts")
-    Call<Contact> create(@Body Contact contact);
+    Call<Contact> create(@Body Class<ContactService> contact);
+
+    Call<List<Contact>> getContacts(int page, int limit);
 }

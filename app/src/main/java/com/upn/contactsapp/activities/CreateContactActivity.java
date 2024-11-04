@@ -9,16 +9,15 @@ import android.os.Bundle;
 import android.provider.MediaStore;
 import android.util.Base64;
 import android.util.Log;
-import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
-import com.google.gson.Gson;
 import com.upn.contactsapp.AppDatabase;
-import com.upn.contactsapp.MainActivity;
 import com.upn.contactsapp.R;
 import com.upn.contactsapp.daos.ContactDAO;
 import com.upn.contactsapp.entities.Contact;
@@ -26,7 +25,8 @@ import com.upn.contactsapp.services.ContactService;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.security.Permissions;
+import java.util.ArrayList;
+import java.util.List;
 
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -36,17 +36,25 @@ import retrofit2.converter.gson.GsonConverterFactory;
 
 public class CreateContactActivity extends AppCompatActivity {
 
-    ImageView ivPhoto;
-    String imageBase64;
+    private ImageView ivPhoto;
+    private String imageBase64;
+    private RecyclerView recyclerViewContacts;
+    private ContactAdapter adapter; // Crea este adaptador para manejar la lista de contactos
+    private List<Contact> contacts = new ArrayList<>();
+    private int currentPage = 1;
+    private final int LIMIT = 10;
+    private ContactService page;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_create_contact);
-
+        ivPhoto = findViewById(R.id.ivPhoto);
+        recyclerViewContacts = findViewById(R.id.recyclerViewContacts);
+        setupRecyclerView();
         setUpBtnTakePhoto();
         setUpBtnChoosePhoto();
-        ivPhoto = findViewById(R.id.ivPhoto);
+
 
         AppDatabase db = AppDatabase.getInstance(this);
         ContactDAO contactDAO = db.contactDAO();
@@ -61,6 +69,7 @@ public class CreateContactActivity extends AppCompatActivity {
                 .build();
 
         ContactService service = retrofit.create(ContactService.class);
+        loadContacts(currentPage, page);
 
         btnGuardarContacto.setOnClickListener(view -> {
 
@@ -73,36 +82,51 @@ public class CreateContactActivity extends AppCompatActivity {
             contact.localId = (int) contactDAO.insert(contact);
 
             Log.i("CONTACT_LOCAL_ID",  String.valueOf(contact.localId));
+        });
+        setupPaginationButtons(service, page);
+    }
 
-//            service.create(contact).enqueue(new Callback<Contact>() {
-//                @Override
-//                public void onResponse(Call<Contact> call, Response<Contact> response) {
-//                    Log.i("MAIN_APP", String.valueOf(response.code()));
-//
-//                    if (response.isSuccessful()) {
-//
-//                        Contact newContact = response.body();
-//
-//                        Intent intent = getIntent();
-//                        intent.putExtra("CONTACT", new Gson().toJson(newContact));
-//
-//                        contact.id = newContact.id;
-//                        contactDAO.update(contact.localId, newContact.id);
-//
-//                        setResult(100, intent);
-//                        finish();
-//
-//                    }
-//
-//                }
-//
-//                @Override
-//                public void onFailure(Call<Contact> call, Throwable throwable) {
-//                    Log.e("MAIN_APP", throwable.getMessage());
-//                }
-//            });
+    private void setupPaginationButtons(ContactService service, Object page) {
+        Button btnPrev = findViewById(R.id.btnPrev);
+        Button btnNext = findViewById(R.id.btnNext);
+
+        btnPrev.setOnClickListener(v -> {
+            if (currentPage > 1) {
+                currentPage--;
+                loadContacts(currentPage, (ContactService) page);
+            }
         });
 
+        btnNext.setOnClickListener(v -> {
+            currentPage++;
+            loadContacts(currentPage, (ContactService) page);
+        });
+    }
+
+
+    private void loadContacts(int page, ContactService retrofit) {
+        ContactService service = (ContactService)  retrofit.create(ContactService.class);
+        service.getContacts(page, LIMIT).enqueue(new Callback<List<Contact>>() {
+            @Override
+            public void onResponse(Call<List<Contact>> call, Response<List<Contact>> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    contacts.clear(); // Limpiar la lista antes de agregar nuevos contactos
+                    contacts.addAll(response.body());
+                    adapter.notifyDataSetChanged();
+                }
+            }
+
+            @Override
+            public void onFailure(Call<List<Contact>> call, Throwable t) {
+                Log.e("MAIN_APP", t.getMessage());
+            }
+        });
+    }
+
+    private void setupRecyclerView() {
+        recyclerViewContacts.setLayoutManager(new LinearLayoutManager(this));
+        adapter = new ContactAdapter(contacts); // Asegúrate de crear este adaptador
+        recyclerViewContacts.setAdapter(adapter);
     }
 
     private void setUpBtnChoosePhoto() {

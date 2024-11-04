@@ -65,7 +65,38 @@
       android:layout_width="match_parent"
       android:layout_height="wrap_content"
       android:layout_margin="8dp"
-      android:text="Guardar"
-      />
+      android:text="Guardar" />
+  <!-- Botones de paginación -->
 
+  <androidx.recyclerview.widget.RecyclerView
+      android:id="@+id/recyclerViewContacts"
+      android:layout_width="match_parent"
+      android:layout_height="0dp"
+      android:layout_marginTop="8dp"
+      android:layout_weight="1"
+      android:clipToPadding="false"
+      android:padding="8dp"
+      android:scrollbars="vertical" />
+
+  <LinearLayout
+      android:layout_width="match_parent"
+      android:layout_height="wrap_content"
+      android:orientation="horizontal"
+      android:gravity="center"
+      android:layout_marginTop="8dp">
+
+    <Button
+        android:id="@+id/btnPrev"
+        android:text="Anterior"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content" />
+
+    <Button
+        android:id="@+id/btnNext"
+        android:text="Siguiente"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="16dp" />
   </LinearLayout>
+
+</LinearLayout>
